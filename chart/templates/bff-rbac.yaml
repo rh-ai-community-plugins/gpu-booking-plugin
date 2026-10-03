@@ -25,19 +25,21 @@ rules:
   - apiGroups: ["authorization.k8s.io"]
     resources: ["subjectaccessreviews"]
     verbs: ["create"]
-  # Kueue: manage GPU quota reservations
+  # Kueue: manage GPU quota reservations. NOTE: create is required for
+  # server-side apply (PATCH apply-patch+yaml) of objects that do not exist yet
+  # — the reservation sync creates Cohorts/ClusterQueues/LocalQueues on demand.
   - apiGroups: ["kueue.x-k8s.io"]
     resources: ["clusterqueues"]
-    verbs: ["get", "list", "patch", "delete"]
+    verbs: ["get", "list", "create", "patch", "delete"]
   - apiGroups: ["kueue.x-k8s.io"]
     resources: ["localqueues"]
-    verbs: ["get", "list", "patch", "delete"]
+    verbs: ["get", "list", "create", "patch", "delete"]
   - apiGroups: ["kueue.x-k8s.io"]
     resources: ["workloads"]
     verbs: ["list"]
   - apiGroups: ["kueue.x-k8s.io"]
     resources: ["cohorts"]
-    verbs: ["get", "patch"]
+    verbs: ["get", "create", "patch"]
   - apiGroups: ["kueue.x-k8s.io"]
     resources: ["resourceflavors"]
     verbs: ["list"]
