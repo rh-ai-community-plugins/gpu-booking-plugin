@@ -14,7 +14,6 @@ import gpuUsagePanel from './images/gpu-usage-panel.png';
 import header from './images/header.png';
 import kueueBookings from './images/kueue-bookings.png';
 import kueueOverride from './images/kueue-override.png';
-import login from './images/login.png';
 import mainContent from './images/main-content.png';
 import makeBooking from './images/make-booking.png';
 import monthNav from './images/month-nav.png';
@@ -46,7 +45,6 @@ const imageMap: Record<string, string> = {
   'images/header.png': header,
   'images/kueue-bookings.png': kueueBookings,
   'images/kueue-override.png': kueueOverride,
-  'images/login.png': login,
   'images/main-content.png': mainContent,
   'images/make-booking.png': makeBooking,
   'images/month-nav.png': monthNav,

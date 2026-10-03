@@ -29,8 +29,6 @@ The booking app is protected by OpenShift OAuth. When you visit the app, you wil
 
 Once authenticated, your username is automatically used for all bookings you create -- no additional sign-up required.
 
-![images/login.png](images/login.png)
-
 ---
 
 ## Page Layout
