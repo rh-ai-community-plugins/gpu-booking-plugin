@@ -79,3 +79,12 @@ support:
   repo: https://github.com/rh-ai-community-plugins/gpu-booking   # [PLUGIN-SPECIFIC]
   docs: https://github.com/rh-ai-community-plugins/gpu-booking/tree/main/docs
   issues: https://github.com/rh-ai-community-plugins/gpu-booking/issues
+
+# --- Screenshots (optional, used by the catalog site) ---
+screenshots:
+  - path: docs/images/overview.png
+    caption: GPU Resource Booking — bookings page with the discovered GPU resource and usage overview
+  - path: docs/images/booking-dialog.png
+    caption: Booking dialog with date range, hours, GPU equivalents and description
+  - path: docs/images/admin-overview.png
+    caption: GPU Booking Administration — reservation sync, GPU discovery, database export/import
