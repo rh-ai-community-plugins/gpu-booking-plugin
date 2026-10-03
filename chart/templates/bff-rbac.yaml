@@ -1,0 +1,97 @@
+{{- if and .Values.bff.enabled .Values.bff.rbac.create }}
+{{- if and (not .Values.bff.serviceAccount.create) (not .Values.bff.serviceAccount.name) }}
+{{- fail "bff.rbac.create=true requires either bff.serviceAccount.create=true or bff.serviceAccount.name to be set" }}
+{{- end }}
+{{- $saName := include "gpu-booking.bffServiceAccountName" . }}
+# Backend ServiceAccount permissions, derived from pkg/api and pkg/kube:
+#   - TokenReview + SubjectAccessReview create (auth middleware verifies the
+#     user's Bearer token and checks the gpubooking.openshift.io admin verb)
+#   - Kueue management (ClusterQueues, LocalQueues, Workloads, Cohorts,
+#     ResourceFlavors) for GPU quota reservations
+#   - OpenDataHub HardwareProfile management for reserved profiles
+#   - Node listing (GPU discovery) and Namespace lookup
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "gpu-booking.fullname" . }}-bff
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bff
+rules:
+  # Auth middleware: verify user tokens and check admin permissions
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+  # Kueue: manage GPU quota reservations
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["clusterqueues"]
+    verbs: ["get", "list", "patch", "delete"]
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["localqueues"]
+    verbs: ["get", "list", "patch", "delete"]
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["workloads"]
+    verbs: ["list"]
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["cohorts"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["resourceflavors"]
+    verbs: ["list"]
+  # OpenDataHub: manage reserved HardwareProfiles
+  - apiGroups: ["infrastructure.opendatahub.io"]
+    resources: ["hardwareprofiles"]
+    verbs: ["get", "list", "patch", "delete"]
+  # GPU discovery + namespace verification
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "gpu-booking.fullname" . }}-bff
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bff
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "gpu-booking.fullname" . }}-bff
+subjects:
+  - kind: ServiceAccount
+    name: {{ $saName }}
+    namespace: {{ include "gpu-booking.namespace" . }}
+---
+# User-facing role: allows using the booking plugin. Bind to regular users so
+# the backend's SubjectAccessReview admin check can distinguish them from admins.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "gpu-booking.fullname" . }}-user
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["gpubooking.openshift.io"]
+    resources: ["bookings"]
+    verbs: ["use"]
+---
+# Admin role: allows admin operations on the booking plugin. Bind to cluster
+# admins or platform teams managing GPU reservations.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "gpu-booking.fullname" . }}-admin
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["gpubooking.openshift.io"]
+    resources: ["bookings"]
+    verbs: ["use", "admin"]
+{{- end }}

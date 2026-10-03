@@ -1,0 +1,134 @@
+{{- if .Values.bff.enabled }}
+{{- $portName := "http" }}
+{{- if .Values.bff.tls.enabled }}
+{{- $portName = "https" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gpu-booking.fullname" . }}-bff
+  namespace: {{ include "gpu-booking.namespace" . }}
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bff
+spec:
+  replicas: {{ .Values.bff.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "gpu-booking.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: bff
+  template:
+    metadata:
+      labels:
+        {{- include "gpu-booking.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: bff
+    spec:
+      serviceAccountName: {{ include "gpu-booking.bffServiceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+        - name: bff
+          image: "{{ .Values.bff.image.repository }}:{{ .Values.bff.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.bff.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: PORT
+              value: {{ .Values.bff.service.targetPort | quote }}
+            - name: DB_PATH
+              value: "{{ .Values.persistence.mountPath }}/bookings.db"
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: BOOKING_WINDOW_DAYS
+              value: {{ .Values.bookingWindowDays | quote }}
+            - name: KUEUE_SYNC_ENABLED
+              value: {{ .Values.kueue.syncEnabled | quote }}
+            - name: KUEUE_SYNC_INTERVAL
+              value: {{ .Values.kueue.syncIntervalSeconds | quote }}
+            - name: KUEUE_BOOKING_DAYS
+              value: {{ .Values.kueue.bookingDays | quote }}
+            - name: GPU_DISCOVERY_ENABLED
+              value: {{ .Values.gpuDiscovery.enabled | quote }}
+            - name: GPU_DISCOVERY_INTERVAL
+              value: {{ .Values.gpuDiscovery.intervalSeconds | quote }}
+            {{- if .Values.bff.tls.enabled }}
+            - name: TLS_CERT_FILE
+              value: /var/serving-cert/tls.crt
+            - name: TLS_KEY_FILE
+              value: /var/serving-cert/tls.key
+            {{- end }}
+          ports:
+            - name: {{ $portName }}
+              containerPort: {{ .Values.bff.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ $portName }}
+              {{- if .Values.bff.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ $portName }}
+              {{- if .Values.bff.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if not .Values.gpuDiscovery.enabled }}
+            - name: gpu-config
+              mountPath: /app/config
+              readOnly: true
+            {{- end }}
+            {{- if .Values.bff.tls.enabled }}
+            - name: serving-cert
+              readOnly: true
+              mountPath: /var/serving-cert
+            {{- end }}
+          resources:
+            {{- toYaml .Values.bff.resources | nindent 12 }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "gpu-booking.fullname" . }}-data
+        {{- end }}
+        {{- if not .Values.gpuDiscovery.enabled }}
+        - name: gpu-config
+          configMap:
+            name: {{ include "gpu-booking.fullname" . }}-gpu-config
+        {{- end }}
+        {{- if .Values.bff.tls.enabled }}
+        - name: serving-cert
+          secret:
+            secretName: {{ include "gpu-booking.fullname" . }}-bff-cert
+            defaultMode: 420
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

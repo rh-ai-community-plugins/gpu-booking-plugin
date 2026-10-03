@@ -1,0 +1,81 @@
+# --- Plugin identity (required) ---
+name: gpu-booking                           # [PLUGIN-SPECIFIC] unique plugin identifier (kebab-case)
+displayName: GPU Booking                    # [PLUGIN-SPECIFIC] human-readable name
+description: GPU resource reservation with Kueue integration, embedded in the RHOAI Dashboard
+version: 0.1.0
+
+# --- Maintainer (required) ---
+maintainer:                          # [PLUGIN-SPECIFIC]
+  name: Mike Hepburn                         # [PLUGIN-SPECIFIC] replace with maintainer's name
+  github: eformat        # [PLUGIN-SPECIFIC] replace with maintainer's GitHub handle
+
+# --- RHOAI compatibility (required) ---
+rhoai_compatibility:                 # [PLUGIN-SPECIFIC]
+  min_version: "3.3.0"
+  tested_versions: ["3.5.1"]
+
+# --- Deployment (required) ---
+deployment_model: cluster-shared     # per-project | cluster-shared | both
+
+image:                               # [PLUGIN-SPECIFIC]
+  repository: quay.io/rh-ai-community-plugins/gpu-booking
+  tag: "0.1.0"
+
+bff_image:                           # [PLUGIN-SPECIFIC] (optional — only if using BFF pattern)
+  repository: quay.io/rh-ai-community-plugins/gpu-booking-bff
+  tag: "0.1.0"
+
+# --- Installation (required) ---
+install:
+  method: automatic                  # automatic | assisted | manual
+  namespace: cp-gpu-booking          # [PLUGIN-SPECIFIC] default namespace for deployment
+  helm:
+    chart_path: chart/
+    registry: oci://quay.io/rh-ai-community-plugins/gpu-booking-chart  # [PLUGIN-SPECIFIC]
+  prerequisites: []
+  instructions: https://github.com/rh-ai-community-plugins/gpu-booking/blob/main/docs/deployment  # [PLUGIN-SPECIFIC]
+
+# --- Dashboard integration (required) ---
+remote:
+  type: module-federation
+  spec:
+    name: gpuBooking                     # [PLUGIN-SPECIFIC] Module Federation container name (camelCase)
+    scope: gpuBooking                    # [PLUGIN-SPECIFIC] must match name above
+    # [PLUGIN-SPECIFIC] Update this URL to point to your deployed OpenShift route.
+    # The URL is cluster-specific and depends on the route created by the Helm chart or Ingress.
+    # Example: https://gpu-booking-mynamespace.apps.mycluster.example.com/remoteEntry.js
+    remoteEntry: https://<your-openshift-route>/remoteEntry.js  # [PLUGIN-SPECIFIC]
+    paths:
+      - type: route
+        path: /gpu-booking               # [PLUGIN-SPECIFIC] must match route prefix in extensions.ts
+        extensions:
+          - gpuBooking/extensions        # [PLUGIN-SPECIFIC] {scope}/extensions
+      - type: icon
+        path: gpuBooking/Icon            # [PLUGIN-SPECIFIC] {scope}/Icon
+
+# --- RBAC (required) ---
+# The backend's ServiceAccount needs cluster-scoped permissions (created by the
+# Helm chart as a `gpu-booking-bff` ClusterRole + ClusterRoleBinding, see
+# chart/templates/bff-rbac.yaml). Permissions derived from the Go backend code:
+#   - TokenReview + SubjectAccessReview create: the auth middleware verifies the
+#     user's Bearer token and checks the gpubooking.openshift.io admin verb
+#   - Kueue ClusterQueues/LocalQueues/Cohorts: get, list, patch, delete
+#   - Kueue Workloads + ResourceFlavors: list
+#   - OpenDataHub HardwareProfiles: get, list, patch, delete
+#   - core nodes: list (GPU discovery); core namespaces: get
+rbac:
+  required_roles:
+    - "authentication.k8s.io/tokenreviews: create"
+    - "authorization.k8s.io/subjectaccessreviews: create"
+    - "kueue.x-k8s.io/clusterqueues, localqueues, cohorts: get, list, patch, delete"
+    - "kueue.x-k8s.io/workloads, resourceflavors: list"
+    - "infrastructure.opendatahub.io/hardwareprofiles: get, list, patch, delete"
+    - "core/nodes: list"
+    - "core/namespaces: get"
+  cluster_roles: true
+
+# --- Support (optional) ---
+support:
+  repo: https://github.com/rh-ai-community-plugins/gpu-booking   # [PLUGIN-SPECIFIC]
+  docs: https://github.com/rh-ai-community-plugins/gpu-booking/tree/main/docs
+  issues: https://github.com/rh-ai-community-plugins/gpu-booking/issues

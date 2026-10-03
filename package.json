@@ -1,0 +1,75 @@
+{
+  "name": "gpu-booking",
+  "version": "0.1.0",
+  "description": "RHOAI Dashboard community plugin for GPU resource booking with Kueue integration",
+  "private": true,
+  "_comment_name": "[PLUGIN-SPECIFIC] package name — change to {your-plugin}",
+  "_comment_mf": "[PLUGIN-SPECIFIC] module-federation.name — camelCase, must match webpack and plugin.yaml",
+  "module-federation": {
+    "name": "gpuBooking",
+    "remoteEntry": "remoteEntry.js",
+    "authorize": false,
+    "tls": false,
+    "proxy": [
+      {
+        "path": "/gpu-booking/api",
+        "pathRewrite": "/api"
+      }
+    ],
+    "_comment_proxy": "[PLUGIN-SPECIFIC] proxy path must match route prefix in extensions.ts",
+    "local": {
+      "host": "localhost",
+      "port": 9500
+    },
+    "_comment_port": "[PLUGIN-SPECIFIC] dev port — any unused port works",
+    "service": {
+      "name": "odh-dashboard",
+      "port": 8443
+    }
+  },
+  "scripts": {
+    "build": "webpack --config config/webpack.prod.js",
+    "build:dev": "webpack --config config/webpack.dev.js",
+    "start:dev": "webpack serve --config config/webpack.dev.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "validate": "npm run typecheck && npm run lint && npm test",
+    "lint": "eslint --ext .ts,.tsx src/"
+  },
+  "dependencies": {
+    "@openshift/dynamic-plugin-sdk": "^5",
+    "@patternfly/react-core": "^6",
+    "@patternfly/react-icons": "^6",
+    "@patternfly/react-table": "^6",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-markdown": "^10",
+    "react-router-dom": "^7",
+    "rehype-raw": "^7",
+    "remark-gfm": "^4"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@typescript-eslint/eslint-plugin": "^7",
+    "@typescript-eslint/parser": "^7",
+    "@vitest/coverage-v8": "^4",
+    "ajv": "^8.12.0",
+    "css-loader": "^7",
+    "eslint": "^8",
+    "html-webpack-plugin": "^5",
+    "jsdom": "^29",
+    "mini-css-extract-plugin": "^2",
+    "style-loader": "^4",
+    "ts-loader": "^9",
+    "typescript": "^5",
+    "vitest": "^4",
+    "webpack": "^5",
+    "webpack-cli": "^5",
+    "webpack-dev-server": "^5",
+    "webpack-merge": "^5"
+  }
+}

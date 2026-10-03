@@ -1,0 +1,122 @@
+# Default values for the gpu-booking chart.
+# This is a YAML-formatted file.
+
+# -- Target namespace for all namespaced resources.
+# Override with --set namespace=<ns> to deploy elsewhere.
+namespace: cp-gpu-booking
+
+image:
+  repository: quay.io/rh-ai-community-plugins/gpu-booking
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Overrides .Chart.Name so deployed resources use the plugin name, not the
+# chart name (which has a -chart suffix to avoid OCI registry collisions).
+nameOverride: "gpu-booking"
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+securityContext:
+  runAsNonRoot: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# SQLite booking database persistence for the Go backend
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 2Gi
+  mountPath: /app/data
+
+# Booking / Kueue / discovery tuning for the Go backend
+bookingWindowDays: 30
+
+kueue:
+  syncEnabled: true
+  syncIntervalSeconds: 30
+  bookingDays: 7
+
+gpuDiscovery:
+  enabled: true
+  intervalSeconds: 600
+
+# Static GPU resource config — only rendered when gpuDiscovery.enabled is false
+gpuConfig:
+  resources:
+    - name: "H200 Full GPU"
+      type: "nvidia.com/gpu"
+      count: 8
+      share: 0.0625
+      gpuEquivalent: 1.0
+    - name: "MIG 3g.71gb"
+      type: "nvidia.com/mig-3g.71gb"
+      count: 8
+      share: 0.03125
+      gpuEquivalent: 0.5
+    - name: "MIG 2g.35gb"
+      type: "nvidia.com/mig-2g.35gb"
+      count: 8
+      share: 0.015625
+      gpuEquivalent: 0.25
+    - name: "MIG 1g.18gb"
+      type: "nvidia.com/mig-1g.18gb"
+      count: 16
+      share: 0.0078125
+      gpuEquivalent: 0.125
+  totalCpu: 316
+  totalMemory: 3460
+
+# Backend (Go API) service
+bff:
+  enabled: true
+  image:
+    repository: quay.io/rh-ai-community-plugins/gpu-booking-bff
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+  # The dashboard's route/proxy terminates TLS; the backend listens on plain
+  # HTTP by default. Set tls.enabled=true to use an OpenShift serving cert
+  # (requires the backend to run with TLS_CERT_FILE/TLS_KEY_FILE).
+  tls:
+    enabled: false
+  rbac:
+    create: true
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi

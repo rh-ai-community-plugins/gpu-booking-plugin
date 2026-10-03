@@ -1,0 +1,13 @@
+{{- if not .Values.gpuDiscovery.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "gpu-booking.fullname" . }}-gpu-config
+  namespace: {{ include "gpu-booking.namespace" . }}
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+    app.kubernetes.io/component: config
+data:
+  gpu-config.json: |
+    {{- .Values.gpuConfig | toPrettyJson | nindent 4 }}
+{{- end }}

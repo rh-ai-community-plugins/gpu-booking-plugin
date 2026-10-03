@@ -1,0 +1,8 @@
+{{- if ne (include "gpu-booking.namespace" .) .Release.Namespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "gpu-booking.namespace" . }}
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+{{- end }}

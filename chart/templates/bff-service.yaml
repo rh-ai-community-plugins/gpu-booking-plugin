@@ -1,0 +1,28 @@
+{{- if .Values.bff.enabled }}
+{{- $portName := "http" }}
+{{- if .Values.bff.tls.enabled }}
+{{- $portName = "https" }}
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gpu-booking.fullname" . }}-bff
+  namespace: {{ include "gpu-booking.namespace" . }}
+  labels:
+    {{- include "gpu-booking.labels" . | nindent 4 }}
+    app.kubernetes.io/component: bff
+  {{- if .Values.bff.tls.enabled }}
+  annotations:
+    service.alpha.openshift.io/serving-cert-secret-name: {{ include "gpu-booking.fullname" . }}-bff-cert
+  {{- end }}
+spec:
+  type: {{ .Values.bff.service.type }}
+  ports:
+    - port: {{ .Values.bff.service.port }}
+      targetPort: {{ .Values.bff.service.targetPort }}
+      protocol: TCP
+      name: {{ $portName }}
+  selector:
+    {{- include "gpu-booking.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: bff
+{{- end }}

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: gpu-booking-chart
+description: A Helm chart for deploying the GPU Booking plugin for the RHOAI Dashboard
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - rhoai
+  - openshift-ai
+  - plugin
+  - gpu
+  - kueue
+home: https://github.com/rh-ai-community-plugins/gpu-booking
+sources:
+  - https://github.com/rh-ai-community-plugins/gpu-booking
